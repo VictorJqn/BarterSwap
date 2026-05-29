@@ -1,27 +1,38 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
-	"os"
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+	cfg := loadConfig()
+
+	ctx := context.Background()
+	db, err := openDB(ctx, cfg.databaseURL)
+	if err != nil {
+		log.Fatalf("base de données : %v", err)
 	}
+	defer db.Close()
+
+	if err := migrate(ctx, db); err != nil {
+		log.Fatalf("migration : %v", err)
+	}
+	log.Println("schéma vérifié / créé")
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
+		if err := db.PingContext(r.Context()); err != nil {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]string{"status": "db indisponible"})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 
-	log.Printf("BarterSwap API à l'écoute sur :%s", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	log.Printf("BarterSwap API à l'écoute sur :%s", cfg.port)
+	if err := http.ListenAndServe(":"+cfg.port, mux); err != nil {
 		log.Fatalf("serveur arrêté : %v", err)
 	}
 }

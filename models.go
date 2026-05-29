@@ -38,7 +38,6 @@ type Exchange struct {
 	UpdatedAt   string `json:"updated_at"`
 }
 
-
 type CreditTransaction struct {
 	ID         int    `json:"id"`
 	UserID     int    `json:"user_id"`
