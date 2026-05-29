@@ -1,0 +1,17 @@
+# Binaire compilé
+/barterswap
+*.exe
+*.out
+*.test
+
+# Variables d'environnement (secrets, DSN)
+.env
+
+# Couverture de tests
+coverage.out
+coverage.html
+
+# macOS / IDE
+.DS_Store
+.idea/
+.vscode/

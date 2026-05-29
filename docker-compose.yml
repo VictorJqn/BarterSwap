@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: barterswap-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: barterswap
+      POSTGRES_PASSWORD: barterswap
+      POSTGRES_DB: barterswap
+    ports:
+      - "5433:5432"
+    volumes:
+      - barterswap-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U barterswap -d barterswap"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  barterswap-pgdata:
