@@ -113,3 +113,17 @@ func (api *API) replaceSkills(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, updated)
 }
+
+func (api *API) getUserStats(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r, "id")
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	stats, err := api.users.Stats(r.Context(), id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, stats)
+}

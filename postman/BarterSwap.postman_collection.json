@@ -414,6 +414,32 @@
 						"url": "{{base_url}}/api/users/{{alice_id}}/reviews"
 					},
 					"response": []
+				},
+				{
+					"name": "12. Stats d'Alice (cohérence)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"const s = pm.response.json();",
+									"pm.test('1 échange complété', () => pm.expect(s.echanges_completes).to.eql(1));",
+									"pm.test('Solde 12 crédits', () => pm.expect(s.credit_balance).to.eql(12));",
+									"pm.test('2 crédits gagnés', () => pm.expect(s.total_gagne).to.eql(2));",
+									"pm.test('Note moyenne 5', () => pm.expect(s.note_moyenne).to.eql(5));",
+									"pm.test('1 avis reçu', () => pm.expect(s.nb_avis).to.eql(1));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/users/{{alice_id}}/stats"
+					},
+					"response": []
 				}
 			]
 		},
@@ -842,6 +868,20 @@
 			]
 		},
 		{
+			"name": "Statistiques",
+			"item": [
+				{
+					"name": "Statistiques d'un utilisateur",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/users/{{alice_id}}/stats"
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Cas d'erreur (démo)",
 			"description": "Cas métier à montrer au jury — réponses 400, 401, 409 attendues.",
 			"item": [
@@ -1137,6 +1177,26 @@
 						"method": "GET",
 						"header": [],
 						"url": "{{base_url}}/api/users/99999/reviews"
+					},
+					"response": []
+				},
+				{
+					"name": "404 — Stats d'un utilisateur inexistant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 404', () => pm.response.to.have.status(404));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/users/99999/stats"
 					},
 					"response": []
 				}

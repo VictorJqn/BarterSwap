@@ -23,6 +23,7 @@ func (api *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/users/{id}", api.getUser)
 	mux.HandleFunc("PUT /api/users/{id}", api.updateUser)
 	mux.HandleFunc("GET /api/users/{id}/skills", api.getSkills)
+	mux.HandleFunc("GET /api/users/{id}/stats", api.getUserStats)
 	mux.HandleFunc("PUT /api/users/{id}/skills", api.replaceSkills)
 
 	// Services
