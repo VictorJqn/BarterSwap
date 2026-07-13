@@ -10,10 +10,11 @@ type API struct {
 	users     *UserService
 	services  *ServiceService
 	exchanges *ExchangeService
+	reviews   *ReviewService
 }
 
-func NewAPI(users *UserService, services *ServiceService, exchanges *ExchangeService) *API {
-	return &API{users: users, services: services, exchanges: exchanges}
+func NewAPI(users *UserService, services *ServiceService, exchanges *ExchangeService, reviews *ReviewService) *API {
+	return &API{users: users, services: services, exchanges: exchanges, reviews: reviews}
 }
 
 func (api *API) Register(mux *http.ServeMux) {
@@ -39,4 +40,7 @@ func (api *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/exchanges/{id}/reject", api.rejectExchange)
 	mux.HandleFunc("PUT /api/exchanges/{id}/complete", api.completeExchange)
 	mux.HandleFunc("PUT /api/exchanges/{id}/cancel", api.cancelExchange)
+
+	// Évaluations
+	mux.HandleFunc("POST /api/exchanges/{id}/review", api.createReview)
 }

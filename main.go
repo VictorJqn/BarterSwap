@@ -26,6 +26,7 @@ func main() {
 	userSvc := NewUserService(store)
 	serviceSvc := NewServiceService(store, userSvc)
 	exchangeSvc := NewExchangeService(store)
+	reviewSvc := NewReviewService(store)
 
 	mux := http.NewServeMux()
 
@@ -37,7 +38,7 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 
-	api := NewAPI(userSvc, serviceSvc, exchangeSvc)
+	api := NewAPI(userSvc, serviceSvc, exchangeSvc, reviewSvc)
 	api.Register(mux)
 
 	log.Printf("BarterSwap API à l'écoute sur :%s", cfg.port)
