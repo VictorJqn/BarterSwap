@@ -18,4 +18,5 @@ var (
 	_ userRepository     = (*sqlStore)(nil)
 	_ serviceRepository  = (*sqlStore)(nil)
 	_ exchangeRepository = (*sqlStore)(nil)
+	_ reviewRepository   = (*sqlStore)(nil)
 )

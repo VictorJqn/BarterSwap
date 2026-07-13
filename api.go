@@ -10,10 +10,11 @@ type API struct {
 	users     *UserService
 	services  *ServiceService
 	exchanges *ExchangeService
+	reviews   *ReviewService
 }
 
-func NewAPI(users *UserService, services *ServiceService, exchanges *ExchangeService) *API {
-	return &API{users: users, services: services, exchanges: exchanges}
+func NewAPI(users *UserService, services *ServiceService, exchanges *ExchangeService, reviews *ReviewService) *API {
+	return &API{users: users, services: services, exchanges: exchanges, reviews: reviews}
 }
 
 func (api *API) Register(mux *http.ServeMux) {
@@ -22,6 +23,7 @@ func (api *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/users/{id}", api.getUser)
 	mux.HandleFunc("PUT /api/users/{id}", api.updateUser)
 	mux.HandleFunc("GET /api/users/{id}/skills", api.getSkills)
+	mux.HandleFunc("GET /api/users/{id}/stats", api.getUserStats)
 	mux.HandleFunc("PUT /api/users/{id}/skills", api.replaceSkills)
 
 	// Services
@@ -39,4 +41,9 @@ func (api *API) Register(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/exchanges/{id}/reject", api.rejectExchange)
 	mux.HandleFunc("PUT /api/exchanges/{id}/complete", api.completeExchange)
 	mux.HandleFunc("PUT /api/exchanges/{id}/cancel", api.cancelExchange)
+
+	// Évaluations
+	mux.HandleFunc("POST /api/exchanges/{id}/review", api.createReview)
+	mux.HandleFunc("GET /api/users/{id}/reviews", api.listUserReviews)
+	mux.HandleFunc("GET /api/services/{id}/reviews", api.listServiceReviews)
 }

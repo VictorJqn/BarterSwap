@@ -346,6 +346,100 @@
 						"url": "{{base_url}}/api/users/{{alice_id}}"
 					},
 					"response": []
+				},
+				{
+					"name": "10. Bob évalue Alice (5/5)",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('user_id', pm.collectionVariables.get('bob_id'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 201', () => pm.response.to.have.status(201));",
+									"const json = pm.response.json();",
+									"pm.test('Note enregistrée', () => pm.expect(json.note).to.eql(5));",
+									"pm.test('Cible = Alice', () => pm.expect(json.target_id).to.eql(Number(pm.collectionVariables.get('alice_id'))));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-ID",
+								"value": "{{user_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": 5,\n  \"commentaire\": \"Service impeccable, merci Alice !\"\n}"
+						},
+						"url": "{{base_url}}/api/exchanges/{{exchange_id}}/review"
+					},
+					"response": []
+				},
+				{
+					"name": "11. Avis reçus par Alice",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"const avis = pm.response.json();",
+									"pm.test('Au moins un avis', () => pm.expect(avis.length).to.be.at.least(1));",
+									"pm.test('Note 5 de Bob', () => pm.expect(avis[0].note).to.eql(5));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/users/{{alice_id}}/reviews"
+					},
+					"response": []
+				},
+				{
+					"name": "12. Stats d'Alice (cohérence)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"const s = pm.response.json();",
+									"pm.test('1 échange complété', () => pm.expect(s.echanges_completes).to.eql(1));",
+									"pm.test('Solde 12 crédits', () => pm.expect(s.credit_balance).to.eql(12));",
+									"pm.test('2 crédits gagnés', () => pm.expect(s.total_gagne).to.eql(2));",
+									"pm.test('Note moyenne 5', () => pm.expect(s.note_moyenne).to.eql(5));",
+									"pm.test('1 avis reçu', () => pm.expect(s.nb_avis).to.eql(1));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/users/{{alice_id}}/stats"
+					},
+					"response": []
 				}
 			]
 		},
@@ -453,8 +547,13 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/api/services?categorie=Jardinage",
-							"host": ["{{base_url}}"],
-							"path": ["api", "services"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"services"
+							],
 							"query": [
 								{
 									"key": "categorie",
@@ -472,8 +571,13 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/api/services?ville=Paris",
-							"host": ["{{base_url}}"],
-							"path": ["api", "services"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"services"
+							],
 							"query": [
 								{
 									"key": "ville",
@@ -491,8 +595,13 @@
 						"header": [],
 						"url": {
 							"raw": "{{base_url}}/api/services?search=tonte",
-							"host": ["{{base_url}}"],
-							"path": ["api", "services"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"services"
+							],
 							"query": [
 								{
 									"key": "search",
@@ -623,8 +732,13 @@
 						],
 						"url": {
 							"raw": "{{base_url}}/api/exchanges?status=pending",
-							"host": ["{{base_url}}"],
-							"path": ["api", "exchanges"],
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"exchanges"
+							],
 							"query": [
 								{
 									"key": "status",
@@ -703,6 +817,65 @@
 							}
 						],
 						"url": "{{base_url}}/api/exchanges/{{exchange_id}}/cancel"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Évaluations",
+			"item": [
+				{
+					"name": "Donner un avis sur un échange",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-ID",
+								"value": "{{user_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": 5,\n  \"commentaire\": \"Très bon échange\"\n}"
+						},
+						"url": "{{base_url}}/api/exchanges/{{exchange_id}}/review"
+					},
+					"response": []
+				},
+				{
+					"name": "Avis reçus par un utilisateur",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/users/{{alice_id}}/reviews"
+					},
+					"response": []
+				},
+				{
+					"name": "Avis sur un service",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/services/{{service_id}}/reviews"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Statistiques",
+			"item": [
+				{
+					"name": "Statistiques d'un utilisateur",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/users/{{alice_id}}/stats"
 					},
 					"response": []
 				}
@@ -867,6 +1040,163 @@
 						},
 						"url": "{{base_url}}/api/exchanges",
 						"description": "Lancer après avoir créé un échange pending/accepted sur ce service."
+					},
+					"response": []
+				},
+				{
+					"name": "400 — Note hors bornes",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('user_id', pm.collectionVariables.get('bob_id'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 400', () => pm.response.to.have.status(400));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-ID",
+								"value": "{{user_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": 6\n}"
+						},
+						"url": "{{base_url}}/api/exchanges/{{exchange_id}}/review"
+					},
+					"response": []
+				},
+				{
+					"name": "400 — Double avis sur le même échange",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"pm.collectionVariables.set('user_id', pm.collectionVariables.get('bob_id'));"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 400', () => pm.response.to.have.status(400));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-ID",
+								"value": "{{user_id}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": 4,\n  \"commentaire\": \"Deuxième avis (doit échouer)\"\n}"
+						},
+						"url": "{{base_url}}/api/exchanges/{{exchange_id}}/review"
+					},
+					"response": []
+				},
+				{
+					"name": "403 — Avis d'un non-participant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 403', () => pm.response.to.have.status(403));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-ID",
+								"value": "999"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"note\": 3\n}"
+						},
+						"url": "{{base_url}}/api/exchanges/{{exchange_id}}/review"
+					},
+					"response": []
+				},
+				{
+					"name": "404 — Avis d'un utilisateur inexistant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 404', () => pm.response.to.have.status(404));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/users/99999/reviews"
+					},
+					"response": []
+				},
+				{
+					"name": "404 — Stats d'un utilisateur inexistant",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 404', () => pm.response.to.have.status(404));"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/api/users/99999/stats"
 					},
 					"response": []
 				}

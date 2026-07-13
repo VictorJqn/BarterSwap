@@ -14,6 +14,7 @@ type userRepository interface {
 	UpdateUser(ctx context.Context, id int, pseudo, bio, ville string) (User, error)
 	GetSkills(ctx context.Context, userID int) ([]Skill, error)
 	ReplaceSkills(ctx context.Context, userID int, skills []Skill) error
+	GetUserStats(ctx context.Context, userID int) (UserStats, error)
 }
 
 // UserService contient la logique métier liée aux utilisateurs.
@@ -84,6 +85,13 @@ func (s *UserService) ReplaceSkills(ctx context.Context, actorID, targetID int, 
 		}
 	}
 	return s.repo.ReplaceSkills(ctx, targetID, skills)
+}
+
+func (s *UserService) Stats(ctx context.Context, userID int) (UserStats, error) {
+	if _, err := s.repo.GetUserByID(ctx, userID); err != nil {
+		return UserStats{}, err
+	}
+	return s.repo.GetUserStats(ctx, userID)
 }
 
 func (s *UserService) HasSkill(ctx context.Context, userID int, categorie string) (bool, error) {
