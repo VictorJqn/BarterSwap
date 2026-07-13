@@ -21,6 +21,12 @@ func main() {
 	}
 	log.Println("schéma vérifié / créé")
 
+	store := newSQLStore(db)
+
+	userSvc := NewUserService(store)
+	serviceSvc := NewServiceService(store, userSvc)
+	exchangeSvc := NewExchangeService(store)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -31,8 +37,11 @@ func main() {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
 
+	api := NewAPI(userSvc, serviceSvc, exchangeSvc)
+	api.Register(mux)
+
 	log.Printf("BarterSwap API à l'écoute sur :%s", cfg.port)
-	if err := http.ListenAndServe(":"+cfg.port, mux); err != nil {
+	if err := http.ListenAndServe(":"+cfg.port, withMiddleware(mux)); err != nil {
 		log.Fatalf("serveur arrêté : %v", err)
 	}
 }
