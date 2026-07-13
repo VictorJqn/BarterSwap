@@ -29,9 +29,17 @@ func decodeJSON(r *http.Request, dst any) error {
 }
 
 func parseID(r *http.Request, name string) (int, error) {
-	id, err := strconv.Atoi(r.PathValue(name))
-	if err != nil || id <= 0 {
+	id, err := parseIDFromString(r.PathValue(name))
+	if err != nil {
 		return 0, fmt.Errorf("%w: identifiant %q invalide", ErrValidation, name)
+	}
+	return id, nil
+}
+
+func parseIDFromString(raw string) (int, error) {
+	id, err := strconv.Atoi(raw)
+	if err != nil || id <= 0 {
+		return 0, fmt.Errorf("%w: identifiant invalide", ErrValidation)
 	}
 	return id, nil
 }
