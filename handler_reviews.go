@@ -33,3 +33,31 @@ func (api *API) createReview(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusCreated, review)
 }
+
+func (api *API) listUserReviews(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r, "id")
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	reviews, err := api.reviews.ListByUser(r.Context(), id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, reviews)
+}
+
+func (api *API) listServiceReviews(w http.ResponseWriter, r *http.Request) {
+	id, err := parseID(r, "id")
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	reviews, err := api.reviews.ListByService(r.Context(), id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, reviews)
+}

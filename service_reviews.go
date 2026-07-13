@@ -8,6 +8,10 @@ import (
 type reviewRepository interface {
 	GetExchangeByID(ctx context.Context, id int) (Exchange, error)
 	CreateReview(ctx context.Context, r Review) (Review, error)
+	GetUserByID(ctx context.Context, id int) (User, error)
+	GetServiceByID(ctx context.Context, id int) (Service, error)
+	ListReviewsByTarget(ctx context.Context, targetID int) ([]Review, error)
+	ListReviewsByService(ctx context.Context, serviceID int) ([]Review, error)
 }
 
 type ReviewService struct {
@@ -48,4 +52,18 @@ func (s *ReviewService) Create(ctx context.Context, authorID, exchangeID int, in
 		Note:        in.Note,
 		Commentaire: in.Commentaire,
 	})
+}
+
+func (s *ReviewService) ListByUser(ctx context.Context, userID int) ([]Review, error) {
+	if _, err := s.repo.GetUserByID(ctx, userID); err != nil {
+		return nil, err
+	}
+	return s.repo.ListReviewsByTarget(ctx, userID)
+}
+
+func (s *ReviewService) ListByService(ctx context.Context, serviceID int) ([]Review, error) {
+	if _, err := s.repo.GetServiceByID(ctx, serviceID); err != nil {
+		return nil, err
+	}
+	return s.repo.ListReviewsByService(ctx, serviceID)
 }

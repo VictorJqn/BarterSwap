@@ -43,4 +43,6 @@ func (api *API) Register(mux *http.ServeMux) {
 
 	// Évaluations
 	mux.HandleFunc("POST /api/exchanges/{id}/review", api.createReview)
+	mux.HandleFunc("GET /api/users/{id}/reviews", api.listUserReviews)
+	mux.HandleFunc("GET /api/services/{id}/reviews", api.listServiceReviews)
 }
