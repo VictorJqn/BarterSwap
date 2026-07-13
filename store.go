@@ -1,18 +1,10 @@
 package main
 
-import (
-	"context"
-	"database/sql"
-)
+import "database/sql"
 
-type Store interface {
-	CreateUser(ctx context.Context, pseudo, bio, ville string) (User, error)
-	GetUserByID(ctx context.Context, id int) (User, error)
-	UpdateUser(ctx context.Context, id int, pseudo, bio, ville string) (User, error)
-	GetSkills(ctx context.Context, userID int) ([]Skill, error)
-	ReplaceSkills(ctx context.Context, userID int, skills []Skill) error
-}
-
+// sqlStore est l'implémentation PostgreSQL (couche infrastructure).
+// Il satisfait implicitement les interfaces définies par chaque service
+// (principe du cours : interfaces petites, côté consommateur).
 type sqlStore struct {
 	db *sql.DB
 }
@@ -21,4 +13,9 @@ func newSQLStore(db *sql.DB) *sqlStore {
 	return &sqlStore{db: db}
 }
 
-var _ Store = (*sqlStore)(nil)
+// Vérification à la compilation : sqlStore satisfait les contrats des services.
+var (
+	_ userRepository     = (*sqlStore)(nil)
+	_ serviceRepository  = (*sqlStore)(nil)
+	_ exchangeRepository = (*sqlStore)(nil)
+)
