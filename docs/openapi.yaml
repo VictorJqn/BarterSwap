@@ -1,0 +1,549 @@
+openapi: 3.0.3
+info:
+  title: BarterSwap API
+  description: |
+    API d'échange de compétences entre particuliers via un système de crédit-temps.
+    Authentification basique par header `X-User-ID`.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Développement local
+
+tags:
+  - name: Santé
+  - name: Utilisateurs
+  - name: Services
+  - name: Échanges
+  - name: Évaluations
+
+components:
+  securitySchemes:
+    UserID:
+      type: apiKey
+      in: header
+      name: X-User-ID
+      description: Identifiant de l'utilisateur connecté
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+    Skill:
+      type: object
+      required: [nom, niveau]
+      properties:
+        nom:
+          type: string
+          example: Jardinage
+        niveau:
+          type: string
+          enum: [débutant, intermédiaire, expert]
+
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        pseudo: { type: string }
+        bio: { type: string }
+        ville: { type: string }
+        skills:
+          type: array
+          items: { $ref: '#/components/schemas/Skill' }
+        credit_balance: { type: integer }
+        created_at: { type: string, format: date-time }
+
+    CreateUser:
+      type: object
+      required: [pseudo]
+      properties:
+        pseudo: { type: string }
+        bio: { type: string }
+        ville: { type: string }
+
+    UpdateUser:
+      type: object
+      required: [pseudo]
+      properties:
+        pseudo: { type: string }
+        bio: { type: string }
+        ville: { type: string }
+
+    Service:
+      type: object
+      properties:
+        id: { type: integer }
+        provider_id: { type: integer }
+        titre: { type: string }
+        description: { type: string }
+        categorie:
+          type: string
+          enum:
+            - Informatique
+            - Jardinage
+            - Bricolage
+            - Cuisine
+            - Musique
+            - Langues
+            - Sport
+            - Tutorat
+            - Déménagement
+            - Photographie
+            - Animalier
+            - Couture
+            - Autre
+        duree_minutes: { type: integer }
+        credits: { type: integer }
+        ville: { type: string }
+        actif: { type: boolean }
+        created_at: { type: string, format: date-time }
+
+    CreateService:
+      type: object
+      required: [titre, categorie, duree_minutes, credits]
+      properties:
+        titre: { type: string }
+        description: { type: string }
+        categorie: { type: string }
+        duree_minutes: { type: integer }
+        credits: { type: integer }
+        ville: { type: string }
+
+    UpdateService:
+      allOf:
+        - $ref: '#/components/schemas/CreateService'
+        - type: object
+          properties:
+            actif: { type: boolean }
+
+    Exchange:
+      type: object
+      properties:
+        id: { type: integer }
+        service_id: { type: integer }
+        requester_id: { type: integer }
+        owner_id: { type: integer }
+        status:
+          type: string
+          enum: [pending, accepted, rejected, cancelled, completed]
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateExchange:
+      type: object
+      required: [service_id]
+      properties:
+        service_id: { type: integer }
+
+    Review:
+      type: object
+      properties:
+        id: { type: integer }
+        exchange_id: { type: integer }
+        author_id: { type: integer }
+        target_id: { type: integer }
+        note: { type: integer, minimum: 1, maximum: 5 }
+        commentaire: { type: string }
+        created_at: { type: string, format: date-time }
+
+    CreateReview:
+      type: object
+      required: [note]
+      properties:
+        note: { type: integer, minimum: 1, maximum: 5 }
+        commentaire: { type: string }
+
+    UserStats:
+      type: object
+      properties:
+        user_id: { type: integer }
+        services_actifs: { type: integer }
+        echanges_completes: { type: integer }
+        credit_balance: { type: integer }
+        note_moyenne: { type: number, format: float }
+        nb_avis: { type: integer }
+        total_gagne: { type: integer }
+        total_depense: { type: integer }
+
+paths:
+  /health:
+    get:
+      tags: [Santé]
+      summary: Vérifier que l'API et la base sont disponibles
+      responses:
+        '200':
+          description: OK
+        '503':
+          description: Base de données indisponible
+
+  /api/users:
+    post:
+      tags: [Utilisateurs]
+      summary: Créer un compte (+ 10 crédits de bienvenue)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateUser' }
+      responses:
+        '201':
+          description: Utilisateur créé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400':
+          description: Données invalides
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Utilisateurs]
+      summary: Profil public
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '404':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    put:
+      tags: [Utilisateurs]
+      summary: Modifier son profil
+      security: [{ UserID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUser' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '403':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/users/{id}/skills:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Utilisateurs]
+      summary: Compétences d'un utilisateur
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Skill' }
+    put:
+      tags: [Utilisateurs]
+      summary: Définir ses compétences (remplace tout)
+      security: [{ UserID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '#/components/schemas/Skill' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Skill' }
+
+  /api/users/{id}/stats:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Utilisateurs]
+      summary: Statistiques d'un utilisateur
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserStats' }
+
+  /api/users/{id}/reviews:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Évaluations]
+      summary: Avis reçus par un utilisateur
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Review' }
+
+  /api/services:
+    get:
+      tags: [Services]
+      summary: Liste des services
+      parameters:
+        - name: categorie
+          in: query
+          schema: { type: string }
+        - name: ville
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Service' }
+    post:
+      tags: [Services]
+      summary: Créer une annonce
+      security: [{ UserID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateService' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Service' }
+        '400':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/services/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Services]
+      summary: Détail d'un service
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Service' }
+    put:
+      tags: [Services]
+      summary: Modifier son annonce
+      security: [{ UserID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateService' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Service' }
+    delete:
+      tags: [Services]
+      summary: Supprimer son annonce
+      security: [{ UserID: [] }]
+      responses:
+        '204':
+          description: Supprimé
+
+  /api/services/{id}/reviews:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Évaluations]
+      summary: Avis sur un service
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Review' }
+
+  /api/exchanges:
+    get:
+      tags: [Échanges]
+      summary: Mes échanges (envoyés + reçus)
+      security: [{ UserID: [] }]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, accepted, rejected, cancelled, completed]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Exchange' }
+    post:
+      tags: [Échanges]
+      summary: Créer une demande d'échange
+      security: [{ UserID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateExchange' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exchange' }
+        '400':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '409':
+          description: Service déjà réservé
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/exchanges/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [Échanges]
+      summary: Détail d'un échange
+      security: [{ UserID: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exchange' }
+
+  /api/exchanges/{id}/accept:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    put:
+      tags: [Échanges]
+      summary: Accepter (offreur) — bloque les crédits du demandeur
+      security: [{ UserID: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exchange' }
+
+  /api/exchanges/{id}/reject:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    put:
+      tags: [Échanges]
+      summary: Refuser (offreur)
+      security: [{ UserID: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exchange' }
+
+  /api/exchanges/{id}/complete:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    put:
+      tags: [Échanges]
+      summary: Terminer (offreur) — transfère les crédits
+      security: [{ UserID: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exchange' }
+
+  /api/exchanges/{id}/cancel:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    put:
+      tags: [Échanges]
+      summary: Annuler (demandeur ou offreur)
+      security: [{ UserID: [] }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exchange' }
+
+  /api/exchanges/{id}/review:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer }
+    post:
+      tags: [Évaluations]
+      summary: Donner un avis sur un échange terminé
+      security: [{ UserID: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateReview' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Review' }
+        '400':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
