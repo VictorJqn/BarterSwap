@@ -29,7 +29,7 @@ cp .env.example .env   # optionnel
 
 ```bash
 docker compose up -d db
-go run .
+go run ./cmd/barterswap
 ```
 
 L'API est disponible sur **http://localhost:8080**.
@@ -109,49 +109,106 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST $BASE/api/users \
   -d '{"pseudo":""}'
 ```
 
+## Structure du projet
+
+```
+BarterSwap/
+├── cmd/
+│   └── barterswap/
+│       └── main.go                 # Point d'entrée, câblage des dépendances
+├── internal/
+│   ├── domain/
+│   │   ├── doc.go                  # Documentation du package
+│   │   └── models.go               # User, Service, Exchange, Review, UserStats…
+│   ├── apperr/
+│   │   └── errors.go               # Erreurs sentinelles + mapping HTTP
+│   ├── config/
+│   │   └── config.go               # Variables d'environnement (DATABASE_URL, PORT)
+│   ├── database/
+│   │   └── db.go                   # Connexion PostgreSQL + schéma SQL
+│   ├── repository/
+│   │   ├── store.go                # Constructeur Store
+│   │   ├── store_users.go          # SQL utilisateurs + compétences
+│   │   ├── store_services.go       # SQL annonces
+│   │   ├── store_exchanges.go      # SQL échanges + journal crédits
+│   │   ├── store_reviews.go        # SQL avis
+│   │   └── store_stats.go          # SQL statistiques
+│   ├── service/
+│   │   ├── users.go                # Logique métier utilisateurs
+│   │   ├── services.go             # Logique métier annonces
+│   │   ├── exchanges.go            # Logique métier échanges
+│   │   └── reviews.go              # Logique métier avis
+│   └── httpapi/
+│       ├── api.go                  # Enregistrement des routes
+│       ├── handler_users.go        # Handlers utilisateurs
+│       ├── handler_services.go     # Handlers services
+│       ├── handler_exchanges.go    # Handlers échanges
+│       ├── handler_reviews.go      # Handlers avis
+│       ├── http.go                 # Helpers JSON, parsing IDs
+│       └── middleware.go           # Logging, recovery, CORS, auth
+├── tests/
+│   ├── mock/
+│   │   └── store.go                # Store en mémoire (tests unitaires + API)
+│   ├── unit/
+│   │   ├── users_test.go           # Tests UserService
+│   │   ├── services_test.go        # Tests ServiceService
+│   │   ├── exchanges_test.go       # Tests ExchangeService
+│   │   ├── reviews_test.go         # Tests ReviewService
+│   │   ├── errors_test.go          # Tests mapping HTTP
+│   │   ├── config_test.go          # Tests configuration
+│   │   └── http_test.go            # Tests middleware / JSON
+│   ├── api/
+│   │   ├── helpers.go              # Helper newTestAPI
+│   │   └── api_test.go             # Tests httptest (endpoints)
+│   └── integration/
+│       ├── flows_test.go           # Scénarios complets PostgreSQL
+│       └── db_test.go              # Tests connexion / schéma
+├── docs/
+│   └── openapi.yaml                # Spec OpenAPI (Swagger)
+├── postman/
+│   ├── BarterSwap.postman_collection.json
+│   └── BarterSwap.postman_environment.json
+├── docker-compose.yml              # PostgreSQL local
+├── go.mod
+└── README.md
+```
+
 ## Architecture
 
-Mono-package `main` avec séparation en couches :
+Séparation en couches (clean architecture) :
 
 ```
-Handlers (HTTP)  →  Services (métier)  →  sqlStore (SQL)
+httpapi (handlers)  →  service (métier)  →  repository (SQL)
 ```
 
-| Couche | Fichiers |
-|--------|----------|
-| Présentation | `handler_*.go`, `api.go`, `middleware.go` |
-| Métier | `service_*.go` |
-| Infrastructure | `store_*.go`, `db.go` |
+| Couche | Package | Rôle |
+|--------|---------|------|
+| Présentation | `internal/httpapi` | Routes, JSON, middleware, auth header |
+| Métier | `internal/service` | Règles de gestion, validations, cycle de vie |
+| Infrastructure | `internal/repository` | Requêtes SQL, transactions, journal de crédits |
+| Domaine | `internal/domain` | Types partagés (`User`, `Exchange`, etc.) |
 
 Les crédits sont gérés via un **journal** (`credit_transactions`) : `earn`, `spend`, `refund`.
 
 ### Godoc
 
-Le code est documenté avec des commentaires godoc sur le package, les types exportés, les services et les erreurs sentinelles.
-
 ```bash
-# Vue d'ensemble du package
-go doc .
+# Service métier utilisateurs
+go doc barterswap/internal/service UserService
 
-# Documentation complète (types, constantes, fonctions)
-go doc -all .
+# Types du domaine
+go doc barterswap/internal/domain User
 
-# Un service métier et ses méthodes
-go doc UserService
-go doc -all UserService
+# Erreurs et codes HTTP
+go doc barterswap/internal/apperr ErrValidation
+go doc barterswap/internal/apperr HTTPStatus
 
-# Un type du domaine
-go doc User
-go doc Exchange
+# Handler HTTP
+go doc barterswap/internal/httpapi API
 
-# Les erreurs et leur mapping HTTP
-go doc ErrValidation
-go doc httpStatus
-
-# Lancer un serveur godoc local (optionnel)
+# Serveur godoc local (optionnel)
 go install golang.org/x/tools/cmd/godoc@latest
 godoc -http=:6060
-# puis ouvrir http://localhost:6060/pkg/barterswap/
 ```
 
 ## Tests
@@ -161,12 +218,11 @@ docker compose up -d db
 go test -v -cover ./...
 ```
 
-Sans Docker, les tests unitaires et API passent ; les tests d'intégration sont skippés. Couverture actuelle : **~74 %**.
+Sans Docker, les tests unitaires et API passent ; les tests d'intégration sont skippés.
 
-| Fichier | Type |
+| Dossier | Type |
 |---------|------|
-| `service_*_test.go` | Unitaires (table-driven) |
-| `api_test.go` | API (`httptest`) |
-| `integration_test.go` | Intégration PostgreSQL |
-| `mock_test.go` | Mock en mémoire |
-| `config_test.go`, `http_test.go`, `middleware_test.go` | Utilitaires et middleware |
+| `tests/unit/` | Unitaires (table-driven) |
+| `tests/api/` | API (`httptest`) |
+| `tests/integration/` | Intégration PostgreSQL |
+| `tests/mock/` | Mock en mémoire |
