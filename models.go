@@ -1,5 +1,6 @@
 package main
 
+// User représente un compte BarterSwap avec son profil public et son solde de crédits.
 type User struct {
 	ID            int     `json:"id"`
 	Pseudo        string  `json:"pseudo"`
@@ -10,11 +11,13 @@ type User struct {
 	CreatedAt     string  `json:"created_at"`
 }
 
+// Skill décrit une compétence déclarée par un utilisateur.
 type Skill struct {
 	Nom    string `json:"nom"`    // ex: "Jardinage"
 	Niveau string `json:"niveau"` // "débutant", "intermédiaire", "expert"
 }
 
+// Service est une annonce proposant une prestation liée à une compétence.
 type Service struct {
 	ID           int    `json:"id"`
 	ProviderID   int    `json:"provider_id"`
@@ -28,6 +31,7 @@ type Service struct {
 	CreatedAt    string `json:"created_at"`
 }
 
+// Exchange modélise une demande d'échange entre un demandeur et un offreur.
 type Exchange struct {
 	ID          int    `json:"id"`
 	ServiceID   int    `json:"service_id"`
@@ -38,6 +42,7 @@ type Exchange struct {
 	UpdatedAt   string `json:"updated_at"`
 }
 
+// CreditTransaction enregistre un mouvement dans le journal de crédits-temps.
 type CreditTransaction struct {
 	ID         int    `json:"id"`
 	UserID     int    `json:"user_id"`
@@ -47,6 +52,7 @@ type CreditTransaction struct {
 	CreatedAt  string `json:"created_at"`
 }
 
+// Review est une évaluation laissée par un participant après un échange terminé.
 type Review struct {
 	ID          int    `json:"id"`
 	ExchangeID  int    `json:"exchange_id"`
@@ -57,6 +63,7 @@ type Review struct {
 	CreatedAt   string `json:"created_at"`
 }
 
+// UserStats regroupe les indicateurs publics d'activité d'un utilisateur.
 type UserStats struct {
 	UserID            int     `json:"user_id"`
 	ServicesActifs    int     `json:"services_actifs"`
@@ -68,6 +75,7 @@ type UserStats struct {
 	TotalDepense      int     `json:"total_depense"` // crédits dépensés au total
 }
 
+// Statuts possibles du cycle de vie d'un échange.
 const (
 	StatusPending   = "pending"
 	StatusAccepted  = "accepted"
@@ -76,6 +84,7 @@ const (
 	StatusCompleted = "completed"
 )
 
+// Types d'opération enregistrés dans le journal credit_transactions.
 const (
 	TxEarn   = "earn"
 	TxSpend  = "spend"

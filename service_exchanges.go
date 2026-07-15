@@ -23,14 +23,17 @@ type ExchangeService struct {
 	repo exchangeRepository
 }
 
+// NewExchangeService instancie le service métier des échanges.
 func NewExchangeService(repo exchangeRepository) *ExchangeService {
 	return &ExchangeService{repo: repo}
 }
 
+// CreateExchangeInput identifie le service ciblé par une demande d'échange.
 type CreateExchangeInput struct {
 	ServiceID int
 }
 
+// Create enregistre une demande d'échange après validation des règles métier.
 func (s *ExchangeService) Create(ctx context.Context, requesterID int, in CreateExchangeInput) (Exchange, error) {
 	if in.ServiceID <= 0 {
 		return Exchange{}, fmt.Errorf("%w: identifiant de service invalide", ErrValidation)
@@ -59,6 +62,7 @@ func (s *ExchangeService) Create(ctx context.Context, requesterID int, in Create
 	})
 }
 
+// GetByID retourne un échange si l'utilisateur connecté en est participant.
 func (s *ExchangeService) GetByID(ctx context.Context, actorID, exchangeID int) (Exchange, error) {
 	ex, err := s.repo.GetExchangeByID(ctx, exchangeID)
 	if err != nil {
@@ -70,6 +74,7 @@ func (s *ExchangeService) GetByID(ctx context.Context, actorID, exchangeID int) 
 	return ex, nil
 }
 
+// List retourne les échanges envoyés et reçus par l'utilisateur, avec filtre optionnel.
 func (s *ExchangeService) List(ctx context.Context, actorID int, status string) ([]Exchange, error) {
 	if status != "" && !validStatus(status) {
 		return nil, fmt.Errorf("%w: statut %q invalide", ErrValidation, status)
@@ -77,6 +82,7 @@ func (s *ExchangeService) List(ctx context.Context, actorID int, status string) 
 	return s.repo.ListExchanges(ctx, actorID, status)
 }
 
+// Accept fait passer l'échange en accepted et bloque les crédits du demandeur.
 func (s *ExchangeService) Accept(ctx context.Context, actorID, exchangeID int) (Exchange, error) {
 	ex, svc, err := s.loadExchangeWithService(ctx, exchangeID)
 	if err != nil {
@@ -91,6 +97,7 @@ func (s *ExchangeService) Accept(ctx context.Context, actorID, exchangeID int) (
 	return s.repo.GetExchangeByID(ctx, exchangeID)
 }
 
+// Reject refuse une demande en attente (statut rejected).
 func (s *ExchangeService) Reject(ctx context.Context, actorID, exchangeID int) (Exchange, error) {
 	ex, err := s.repo.GetExchangeByID(ctx, exchangeID)
 	if err != nil {
@@ -105,6 +112,7 @@ func (s *ExchangeService) Reject(ctx context.Context, actorID, exchangeID int) (
 	return s.repo.GetExchangeByID(ctx, exchangeID)
 }
 
+// Complete termine un échange accepté et crédite l'offreur.
 func (s *ExchangeService) Complete(ctx context.Context, actorID, exchangeID int) (Exchange, error) {
 	ex, svc, err := s.loadExchangeWithService(ctx, exchangeID)
 	if err != nil {
@@ -119,6 +127,7 @@ func (s *ExchangeService) Complete(ctx context.Context, actorID, exchangeID int)
 	return s.repo.GetExchangeByID(ctx, exchangeID)
 }
 
+// Cancel annule un échange et restitue les crédits si nécessaire.
 func (s *ExchangeService) Cancel(ctx context.Context, actorID, exchangeID int) (Exchange, error) {
 	ex, svc, err := s.loadExchangeWithService(ctx, exchangeID)
 	if err != nil {
