@@ -28,10 +28,12 @@ type ServiceService struct {
 	users *UserService
 }
 
+// NewServiceService instancie le service métier des annonces.
 func NewServiceService(repo serviceRepository, users *UserService) *ServiceService {
 	return &ServiceService{repo: repo, users: users}
 }
 
+// CreateServiceInput contient les champs pour publier une nouvelle annonce.
 type CreateServiceInput struct {
 	Titre        string
 	Description  string
@@ -41,6 +43,7 @@ type CreateServiceInput struct {
 	Ville        string
 }
 
+// UpdateServiceInput contient les champs modifiables d'une annonce existante.
 type UpdateServiceInput struct {
 	Titre        string
 	Description  string
@@ -51,12 +54,14 @@ type UpdateServiceInput struct {
 	Actif        bool
 }
 
+// ListServicesInput regroupe les filtres optionnels de recherche d'annonces.
 type ListServicesInput struct {
 	Categorie string
 	Ville     string
 	Search    string
 }
 
+// Create publie une annonce si le prestataire possède la compétence requise.
 func (s *ServiceService) Create(ctx context.Context, providerID int, in CreateServiceInput) (Service, error) {
 	if err := validateServiceFields(in.Titre, in.Categorie, in.DureeMinutes, in.Credits); err != nil {
 		return Service{}, err
@@ -80,6 +85,7 @@ func (s *ServiceService) Create(ctx context.Context, providerID int, in CreateSe
 	})
 }
 
+// GetByID retourne le détail d'une annonce par son identifiant.
 func (s *ServiceService) GetByID(ctx context.Context, id int) (Service, error) {
 	if id <= 0 {
 		return Service{}, fmt.Errorf("%w: identifiant invalide", ErrValidation)
@@ -87,6 +93,7 @@ func (s *ServiceService) GetByID(ctx context.Context, id int) (Service, error) {
 	return s.repo.GetServiceByID(ctx, id)
 }
 
+// List retourne les annonces filtrées côté serveur (catégorie, ville, recherche).
 func (s *ServiceService) List(ctx context.Context, in ListServicesInput) ([]Service, error) {
 	if in.Categorie != "" && !validCategorie(in.Categorie) {
 		return nil, fmt.Errorf("%w: catégorie %q invalide", ErrValidation, in.Categorie)
@@ -98,6 +105,7 @@ func (s *ServiceService) List(ctx context.Context, in ListServicesInput) ([]Serv
 	})
 }
 
+// Update modifie une annonce appartenant au prestataire connecté.
 func (s *ServiceService) Update(ctx context.Context, actorID, serviceID int, in UpdateServiceInput) (Service, error) {
 	if err := validateServiceFields(in.Titre, in.Categorie, in.DureeMinutes, in.Credits); err != nil {
 		return Service{}, err
@@ -126,6 +134,7 @@ func (s *ServiceService) Update(ctx context.Context, actorID, serviceID int, in 
 	return s.repo.UpdateService(ctx, existing)
 }
 
+// Delete supprime une annonce appartenant au prestataire connecté.
 func (s *ServiceService) Delete(ctx context.Context, actorID, serviceID int) error {
 	existing, err := s.repo.GetServiceByID(ctx, serviceID)
 	if err != nil {

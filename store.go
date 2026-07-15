@@ -9,6 +9,7 @@ type sqlStore struct {
 	db *sql.DB
 }
 
+// newSQLStore crée l'accès PostgreSQL utilisé par les services métier.
 func newSQLStore(db *sql.DB) *sqlStore {
 	return &sqlStore{db: db}
 }

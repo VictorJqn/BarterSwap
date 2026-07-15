@@ -22,22 +22,26 @@ type UserService struct {
 	repo userRepository
 }
 
+// NewUserService instancie le service métier des utilisateurs.
 func NewUserService(repo userRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
+// CreateUserInput contient les champs pour l'inscription d'un nouvel utilisateur.
 type CreateUserInput struct {
 	Pseudo string
 	Bio    string
 	Ville  string
 }
 
+// UpdateUserInput contient les champs modifiables d'un profil utilisateur.
 type UpdateUserInput struct {
 	Pseudo string
 	Bio    string
 	Ville  string
 }
 
+// Create inscrit un utilisateur et lui attribue les crédits de bienvenue.
 func (s *UserService) Create(ctx context.Context, in CreateUserInput) (User, error) {
 	if strings.TrimSpace(in.Pseudo) == "" {
 		return User{}, fmt.Errorf("%w: le pseudo est obligatoire", ErrValidation)
@@ -45,6 +49,7 @@ func (s *UserService) Create(ctx context.Context, in CreateUserInput) (User, err
 	return s.repo.CreateUser(ctx, strings.TrimSpace(in.Pseudo), in.Bio, in.Ville)
 }
 
+// GetByID retourne le profil public d'un utilisateur, avec compétences et solde.
 func (s *UserService) GetByID(ctx context.Context, id int) (User, error) {
 	if id <= 0 {
 		return User{}, fmt.Errorf("%w: identifiant invalide", ErrValidation)
@@ -52,6 +57,7 @@ func (s *UserService) GetByID(ctx context.Context, id int) (User, error) {
 	return s.repo.GetUserByID(ctx, id)
 }
 
+// Update modifie le profil de l'utilisateur connecté (actorID doit égaler targetID).
 func (s *UserService) Update(ctx context.Context, actorID, targetID int, in UpdateUserInput) (User, error) {
 	if actorID != targetID {
 		return User{}, ErrForbidden
@@ -62,6 +68,7 @@ func (s *UserService) Update(ctx context.Context, actorID, targetID int, in Upda
 	return s.repo.UpdateUser(ctx, targetID, strings.TrimSpace(in.Pseudo), in.Bio, in.Ville)
 }
 
+// GetSkills liste les compétences déclarées par un utilisateur.
 func (s *UserService) GetSkills(ctx context.Context, userID int) ([]Skill, error) {
 	if userID <= 0 {
 		return nil, fmt.Errorf("%w: identifiant invalide", ErrValidation)
@@ -72,6 +79,7 @@ func (s *UserService) GetSkills(ctx context.Context, userID int) ([]Skill, error
 	return s.repo.GetSkills(ctx, userID)
 }
 
+// ReplaceSkills remplace l'ensemble des compétences d'un utilisateur.
 func (s *UserService) ReplaceSkills(ctx context.Context, actorID, targetID int, skills []Skill) error {
 	if actorID != targetID {
 		return ErrForbidden
@@ -87,6 +95,7 @@ func (s *UserService) ReplaceSkills(ctx context.Context, actorID, targetID int, 
 	return s.repo.ReplaceSkills(ctx, targetID, skills)
 }
 
+// Stats retourne les indicateurs d'activité agrégés d'un utilisateur.
 func (s *UserService) Stats(ctx context.Context, userID int) (UserStats, error) {
 	if _, err := s.repo.GetUserByID(ctx, userID); err != nil {
 		return UserStats{}, err
@@ -94,6 +103,7 @@ func (s *UserService) Stats(ctx context.Context, userID int) (UserStats, error) 
 	return s.repo.GetUserStats(ctx, userID)
 }
 
+// HasSkill indique si l'utilisateur possède la compétence correspondant à une catégorie.
 func (s *UserService) HasSkill(ctx context.Context, userID int, categorie string) (bool, error) {
 	skills, err := s.repo.GetSkills(ctx, userID)
 	if err != nil {

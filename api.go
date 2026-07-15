@@ -13,10 +13,12 @@ type API struct {
 	reviews   *ReviewService
 }
 
+// NewAPI construit la couche HTTP en injectant les services métier.
 func NewAPI(users *UserService, services *ServiceService, exchanges *ExchangeService, reviews *ReviewService) *API {
 	return &API{users: users, services: services, exchanges: exchanges, reviews: reviews}
 }
 
+// Register attache toutes les routes REST de l'API au ServeMux fourni.
 func (api *API) Register(mux *http.ServeMux) {
 	// Utilisateurs
 	mux.HandleFunc("POST /api/users", api.createUser)
